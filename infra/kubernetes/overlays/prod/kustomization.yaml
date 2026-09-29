@@ -1,0 +1,19 @@
+# Images stay on the local tags so a laptop can apply this overlay.
+# CI publishes ghcr.io/<owner>/<repository>/<service>:<git-sha> and :main.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+replicas:
+  - name: api-gateway
+    count: 2
+  - name: catalog-service
+    count: 2
+patches:
+  - target:
+      kind: ConfigMap
+      name: commerce-flow-config
+    patch: |-
+      - op: replace
+        path: /data/NODE_ENV
+        value: production

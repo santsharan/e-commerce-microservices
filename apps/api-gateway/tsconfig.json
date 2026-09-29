@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/contracts" },
+    { "path": "../../packages/errors" },
+    { "path": "../../packages/auth" },
+    { "path": "../../packages/logger" },
+    { "path": "../../packages/mongodb" },
+    { "path": "../../packages/observability" },
+    { "path": "../../packages/redis" },
+    { "path": "../../packages/test-utils" }
+  ]
+}

@@ -1,0 +1,437 @@
+openapi: 3.1.0
+info:
+  title: Commerce Flow public API
+  version: 1.0.0
+  description: |
+    The API gateway on port 3000. Register, login, and refresh are public and limited to 10 requests per IP each minute.
+    Other routes require a bearer access token and the permission named below.
+    Payment HTTP is not on this edge. The same paths exist on the service ports inside the private network.
+servers:
+  - url: http://127.0.0.1:3000
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema:
+        type: string
+    IfMatch:
+      in: header
+      name: If-Match
+      required: true
+      schema:
+        type: string
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+            details:
+              type: object
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          minimum: 0
+        currency:
+          type: string
+          pattern: "^[A-Za-z]{3}$"
+paths:
+  /api/v1/users/register:
+    post:
+      summary: Register a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 12
+                  maxLength: 128
+      responses:
+        "201":
+          description: Session
+        "429":
+          description: Too many attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/login:
+    post:
+      summary: Log in
+      responses:
+        "201":
+          description: Session
+  /api/v1/users/refresh:
+    post:
+      summary: Rotate a refresh token
+      responses:
+        "201":
+          description: Session
+  /api/v1/users/logout:
+    post:
+      summary: Revoke the presented refresh token
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Logged out
+  /api/v1/users/me:
+    get:
+      summary: Current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Profile
+  /api/v1/categories:
+    get:
+      summary: List categories
+      description: Requires products:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Page of categories
+    post:
+      summary: Create a category
+      description: Requires products:write.
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Category
+  /api/v1/categories/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a category
+      description: Requires products:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Category
+    patch:
+      summary: Update a category
+      description: Requires products:write and If-Match.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Category
+    delete:
+      summary: Delete a category
+      description: Requires products:write and If-Match. Fails when products remain.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+  /api/v1/products:
+    get:
+      summary: List products
+      description: Requires products:read. Supports page, limit, status, categoryId, q, sort, and order.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Page of products
+    post:
+      summary: Create a product
+      description: Requires products:write. Status defaults to draft.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, categoryId, variants]
+              properties:
+                name:
+                  type: string
+                categoryId:
+                  type: string
+                status:
+                  type: string
+                  enum: [draft, active, archived]
+                variants:
+                  type: array
+                  items:
+                    type: object
+                    required: [sku, name, price]
+                    properties:
+                      sku:
+                        type: string
+                      name:
+                        type: string
+                      price:
+                        $ref: "#/components/schemas/Money"
+      responses:
+        "201":
+          description: Product
+  /api/v1/products/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a product
+      description: Requires products:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Product
+    patch:
+      summary: Update a product
+      description: Requires products:write and If-Match.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Product
+    delete:
+      summary: Delete a product
+      description: Requires products:write and If-Match.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "204":
+          description: Deleted
+  /api/v1/orders:
+    get:
+      summary: List orders
+      description: Requires orders:read. A customer is limited to their own customerId.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Page of orders
+    post:
+      summary: Create an order
+      description: Requires orders:write. The gateway sets customerId from the token subject for a customer.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currency, items]
+              properties:
+                currency:
+                  type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, sku, name, unitPrice, quantity]
+                    properties:
+                      productId:
+                        type: string
+                      sku:
+                        type: string
+                      name:
+                        type: string
+                      unitPrice:
+                        type: integer
+                      quantity:
+                        type: integer
+      responses:
+        "201":
+          description: New order
+        "200":
+          description: Replay of the same idempotency key and body
+  /api/v1/orders/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get an order
+      description: Requires orders:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Order, including status and saga.state
+  /api/v1/orders/{id}/cancel:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Cancel an order
+      description: Requires orders:cancel and If-Match.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Order moving through compensation
+  /api/v1/orders/{id}/retries:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Replay a dead-lettered saga step
+      description: Requires the admin role and If-Match.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Ladder cleared
+  /api/v1/inventory:
+    get:
+      summary: Inventory collection is not listed
+      description: Requires inventory:read for item reads. Create stock with POST.
+      security:
+        - bearerAuth: []
+      responses:
+        "404":
+          description: A list route is not defined
+    post:
+      summary: Create stock
+      description: Requires inventory:write.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sku, quantity]
+              properties:
+                sku:
+                  type: string
+                quantity:
+                  type: integer
+      responses:
+        "201":
+          description: Stock
+  /api/v1/inventory/{sku}:
+    parameters:
+      - in: path
+        name: sku
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get stock
+      description: Requires inventory:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stock, including available and reserved
+  /api/v1/inventory/{sku}/adjustments:
+    parameters:
+      - in: path
+        name: sku
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Adjust on-hand stock
+      description: Requires inventory:write.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Stock
+  /api/v1/inventory/reservations:
+    post:
+      summary: Reserve stock
+      description: Requires inventory:write. The order saga uses Kafka for this step.
+      security:
+        - bearerAuth: []
+      responses:
+        "201":
+          description: Reservation
+  /api/v1/inventory/reservations/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a reservation
+      description: Requires inventory:read.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Reservation
+  /api/v1/inventory/reservations/{id}/release:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+    post:
+      summary: Release a reservation
+      description: Requires inventory:write.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Released reservation

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: commerce-flow-config
+  labels:
+    app.kubernetes.io/part-of: commerce-flow
+data:
+  NODE_ENV: development
+  LOG_LEVEL: info
+  MONGO_URI: mongodb://mongo-0.mongo.commerce-flow.svc.cluster.local:27017/?replicaSet=rs0
+  REDIS_URL: redis://redis:6379
+  KAFKA_BROKERS: kafka:9092
+  JWT_ISSUER: commerce-identity
+  JWT_AUDIENCE: commerce-api

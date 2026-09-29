@@ -1,0 +1,14 @@
+node_modules
+**/dist
+**/*.tsbuildinfo
+coverage
+.git
+e-com.md
+docs
+.github
+secrets
+tests
+apps/storefront
+.env
+.env.*
+*.md

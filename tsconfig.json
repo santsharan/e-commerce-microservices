@@ -1,0 +1,25 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/contracts" },
+    { "path": "packages/errors" },
+    { "path": "packages/config" },
+    { "path": "packages/logger" },
+    { "path": "packages/auth" },
+    { "path": "packages/events" },
+    { "path": "packages/kafka" },
+    { "path": "packages/mongodb" },
+    { "path": "packages/redis" },
+    { "path": "packages/observability" },
+    { "path": "packages/outbox" },
+    { "path": "packages/test-utils" },
+    { "path": "scripts" },
+    { "path": "apps/api-gateway" },
+    { "path": "apps/identity-service" },
+    { "path": "apps/catalog-service" },
+    { "path": "apps/inventory-service" },
+    { "path": "apps/order-service" },
+    { "path": "apps/payment-service" },
+    { "path": "apps/notification-service" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@commerce-flow/infra-scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@commerce-flow/config": "workspace:*",
+    "@commerce-flow/events": "workspace:*",
+    "@commerce-flow/mongodb": "workspace:*",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^7.6.0",
+    "redis": "^6.2.1"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
+  }
+}

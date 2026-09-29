@@ -1,0 +1,296 @@
+{
+  "uid": "commerce-kafka-flow",
+  "title": "Kafka order flow",
+  "tags": ["commerce-flow", "kafka"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "What moves when you place an order",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "The storefront calls the gateway. The **order** service writes the order, then publishes Kafka commands. **Inventory** and **payment** consume those commands and publish facts. The order service consumes the facts and finishes the saga.\n\n1. `order-service` → `commerce.inventory.commands.v1` (`inventory.reserve.requested`)\n2. `inventory-service` → `commerce.inventory.v1` (`inventory.reserved` or `inventory.reservation.failed`)\n3. `order-service` → `commerce.payment.commands.v1` (`payment.authorization.requested`)\n4. `payment-service` → `commerce.payments.v1` (`payment.authorized` or `payment.authorization.failed`)\n5. `order-service` consumes the payment fact and the order becomes paid or failed\n\nPlace an order in the store. The **last 2 minutes** row and the graphs below move within about 15 seconds. Totals are since the process started."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Orders created",
+      "description": "order-service recorded a new order before the Kafka commands.",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(orders_created_total)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Inventory commands",
+      "description": "inventory-service consumed commerce.inventory.commands.v1.",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kafka_messages_consumed_total{job=\"inventory-service\",topic=\"commerce.inventory.commands.v1\"})"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Stock reserved",
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(inventory_reservation_success_total)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Inventory facts",
+      "description": "order-service consumed commerce.inventory.v1.",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kafka_messages_consumed_total{job=\"order-service\",topic=\"commerce.inventory.v1\"})"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Payment commands",
+      "description": "payment-service consumed commerce.payment.commands.v1.",
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kafka_messages_consumed_total{job=\"payment-service\",topic=\"commerce.payment.commands.v1\"})"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Payments authorized",
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(payment_authorization_success_total)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Payment facts",
+      "description": "order-service consumed commerce.payments.v1.",
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(kafka_messages_consumed_total{job=\"order-service\",topic=\"commerce.payments.v1\"})"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Orders paid",
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(orders_completed_total)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value", "graphMode": "area" }
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Created, last 2m",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(increase(orders_created_total[2m]))" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Reserved, last 2m",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(increase(inventory_reservation_success_total[2m]))" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "Authorized, last 2m",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(increase(payment_authorization_success_total[2m]))" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "Paid, last 2m",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(increase(orders_completed_total[2m]))" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "Failed, last 2m",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(increase(orders_failed_total[2m])) + sum(increase(payment_authorization_failure_total[2m])) + sum(increase(inventory_reservation_failure_total[2m]))"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "Max consumer lag",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "max(kafka_consumer_lag)" }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "area" }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Kafka messages consumed per minute",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job, topic) (increase(kafka_messages_consumed_total[1m]))",
+          "legendFormat": "{{job}} · {{topic}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 15, "spanNulls": false } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Order, stock, and payment outcomes per minute",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(orders_created_total[1m]))", "legendFormat": "orders created" },
+        { "refId": "B", "expr": "sum(increase(inventory_reservation_success_total[1m]))", "legendFormat": "stock reserved" },
+        { "refId": "C", "expr": "sum(increase(payment_authorization_success_total[1m]))", "legendFormat": "payments authorized" },
+        { "refId": "D", "expr": "sum(increase(orders_completed_total[1m]))", "legendFormat": "orders paid" },
+        { "refId": "E", "expr": "sum(increase(orders_failed_total[1m]))", "legendFormat": "orders failed" },
+        { "refId": "F", "expr": "sum(increase(payment_authorization_failure_total[1m]))", "legendFormat": "payments declined" }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 40 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Consumer lag by service and topic",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job, topic) (kafka_consumer_lag)",
+          "legendFormat": "{{job}} · {{topic}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Saga duration",
+      "description": "Seconds from the start of the order saga until it finishes.",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(saga_duration_seconds_bucket[15m])))",
+          "legendFormat": "p95"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "drawStyle": "line", "fillOpacity": 10 } },
+        "overrides": []
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Messages consumed, by service and topic",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (job, topic) (kafka_messages_consumed_total)",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true },
+            "renameByName": { "job": "Service", "topic": "Topic", "Value": "Messages" }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@commerce-flow/observability",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "typecheck": "tsc -b tsconfig.json --pretty false"
+  },
+  "dependencies": {
+    "@commerce-flow/config": "workspace:*",
+    "@commerce-flow/errors": "workspace:*",
+    "@commerce-flow/kafka": "workspace:*",
+    "@commerce-flow/logger": "workspace:*",
+    "@commerce-flow/mongodb": "workspace:*",
+    "@commerce-flow/redis": "workspace:*",
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/exporter-metrics-otlp-http": "0.222.0",
+    "@opentelemetry/exporter-prometheus": "0.222.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.222.0",
+    "@opentelemetry/instrumentation": "0.222.0",
+    "@opentelemetry/instrumentation-http": "0.222.0",
+    "@opentelemetry/instrumentation-kafkajs": "0.31.0",
+    "@opentelemetry/instrumentation-mongodb": "0.75.0",
+    "@opentelemetry/instrumentation-redis": "0.70.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "@opentelemetry/sdk-trace-node": "2.11.0",
+    "@opentelemetry/semantic-conventions": "1.40.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.1"
+  }
+}

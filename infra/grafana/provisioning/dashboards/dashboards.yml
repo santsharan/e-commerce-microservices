@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: commerce-flow
+    orgId: 1
+    folder: Commerce Flow
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards
